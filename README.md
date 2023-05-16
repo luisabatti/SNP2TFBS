@@ -3,7 +3,7 @@ An R script that identifies the enrichment or loss of transcription factor bindi
 
 # Usage
 
-👉 You can find a step-by-step tutorial on how to use this script here: 
+👉 You can find a step-by-step tutorial on how to use this script here: https://luisabatti.github.io/SNP2TFBS/
 
 👇 Here are the things that you will need to run this script:
 
