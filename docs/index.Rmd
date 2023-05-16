@@ -1,13 +1,30 @@
+---
+title: "SNP2TFBS"
+author: "Luis E. Abatti"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 2
+    theme: readable
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
 # SNP2TFBS
-An R script that identifies the enrichment or loss of transcription factor binding sites at single nucleotide polymorphisms (SNPs) associated with changes in ChIP-seq/ATAC-seq across multiple genomic regions.
 
-# Usage
+👉 This tutorial will show how to use SNP2TFBS, an R script that identifies the enrichment or loss of transcription factor binding sites at single nucleotide polymorphisms (SNPs) associated with changes in ChIP-seq/ATAC-seq signal across multiple genomic regions.
 
-👉 You can find a step-by-step tutorial on how to use this script here: 
+👉 We will use the mouse genome as an example, but this script supports any species from the JASPAR database.
+
+## Usage
 
 👇 Here are the things that you will need to run this script:
 
-1. A list of Position-specific Weight Matrices (PWMs): I recommend using JASPAR2022.
+1. A list of Position-specific Weight Matrices (PWMs): this will be generated using JASPAR2022.
 2. Two sets of input .fasta files containing the regions to be compared. One file must contain the sequences that show high ChIP-seq/ATAC-seq signal. The other file must contain the sequences that show low ChIP-seq/ATAC-seq signal. They must be the ** SAME ** regions but with and without a SNP (for example, WT and mutated sequences). 
 3. Two sets of background .fasta files containing regions to be used as a control. Like the input set, you must use the ** SAME ** regions, with and without a SNP. However, over here you should use regions that do NOT show any gain/loss of ChIP-seq/ATAC-seq signal. 
 
@@ -19,7 +36,7 @@ An R script that identifies the enrichment or loss of transcription factor bindi
 2. TFBSTools
 3. JASPAR2022
 
-# Input
+## Settings
 
 👉 The script takes the following parameters: 
 
@@ -33,7 +50,7 @@ An R script that identifies the enrichment or loss of transcription factor bindi
 8. output_file: path to output .csv file. If set to False, return the results to a variable. Default: False.
 9. test_run: subset the .fasta files to N regions to test the script. Default: False.
 
-# Output
+## Output
 
 👇 Here are the different columns that you will find in the output .csv file:
 
@@ -49,6 +66,79 @@ An R script that identifies the enrichment or loss of transcription factor bindi
 10. p.adj: FDR-adjusted p value.
 11. p.adj.signif: Significance level (*** < 0.001, ** < 0.01, * < 0.05, ns = non-significant).
 
-# Credits
+## Tutorial
 
-Written by Dr. Luis E. Abatti
+👉 Let's run this script with a Oct4 ChIP-seq from the mouse genome to exemplify how it works
+
+👇 First, we load the required libraries
+
+```{r include=FALSE}
+library(tidyverse)
+library(TFBSTools)
+library(JASPAR2022)
+```
+
+👇 Let's also import our script
+
+
+
+```{r}
+source("../R/SNP2TFBS.R")
+```
+
+
+👇 Next, we obtain a list of PWM from the mouse genome using JASPAR2022
+
+```{r}
+pwmList <- getMatrixSet(JASPAR2022, opts = list(collection = "CORE",
+                                                     species = "Mus musculus",
+                                                     matrixtype = "PWM"))
+```
+
+
+👇 First, let's run our script with a test subset of 5 regions:
+
+```{r}
+OCT4_test <- findMotifs(
+  pwmList = pwmList,
+  input_high = c("../data/OCT4_input_high.fa"),
+  input_low = c("../data/OCT4_input_low.fa"),
+  background_1 = c("../data/OCT4_background_1.fa"),
+  background_2 = c("../data/OCT4_background_2.fa"),
+  seq_width = 400,
+  percentage = "85%",
+  output_file = F,
+  test_run = 5)
+```
+
+```{r}
+head(OCT4_test, 10)
+```
+
+👇 Looks like it is working, let's run the full analysis now! This might take a while... 
+
+```{r}
+OCT4_analysis <- findMotifs(
+  pwmList = pwmList,
+  input_high = c("../data/OCT4_input_high.fa"),
+  input_low = c("../data/OCT4_input_low.fa"),
+  background_1 = c("../data/OCT4_background_1.fa"),
+  background_2 = c("../data/OCT4_background_2.fa"),
+  seq_width = 400,
+  percentage = "85%",
+  output_file = F)
+```
+
+```{r}
+head(OCT4_analysis, 10)
+```
+
+✅ Great, it looks like we have a few significant hits!
+
+```{r}
+OCT4_analysis %>%
+  filter(p.adj < 0.05)
+```
+
+
+👉 The top result is the Pou5f1::Sox2 motif, which is a dimer that Oct4 (Pou5f1) is a part of!
